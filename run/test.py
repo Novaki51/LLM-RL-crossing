@@ -57,7 +57,26 @@ class TestTraffic:
         prompt = f"""
         {prompt_template["content"]}
         Current State: {state}
-
+        {traci.lane.getWaitingTime(laneID=1)}
+        {traci.lane.getWaitingTime(laneID=2)}
+        {traci.lane.getWaitingTime(laneID=3)}
+        {traci.lane.getWaitingTime(laneID=4)}
+        {traci.lane.getLastStepMeanSpeed(laneID=1)}
+        {traci.lane.getLastStepMeanSpeed(laneID=2)}
+        {traci.lane.getLastStepMeanSpeed(laneID=3)}
+        {traci.lane.getLastStepMeanSpeed(laneID=4)}
+        {traci.lane.getCO2Emission(laneID=1)}
+        {traci.lane.getCO2Emission(laneID=2)}
+        {traci.lane.getCO2Emission(laneID=3)}
+        {traci.lane.getCO2Emission(laneID=4)}
+        {traci.lane.getNOxEmission(laneID=1)}
+        {traci.lane.getNOxEmission(laneID=2)}
+        {traci.lane.getNOxEmission(laneID=3)}
+        {traci.lane.getNOxEmission(laneID=4)}
+        {traci.lane.getLastStepHaltingNumber(laneID=1)}
+        {traci.lane.getLastStepHaltingNumber(laneID=2)}
+        {traci.lane.getLastStepHaltingNumber(laneID=3)}
+        {traci.lane.getLastStepHaltingNumber(laneID=4)}
         Return a valid JSON object strictly in this format:
         ```json
         {{

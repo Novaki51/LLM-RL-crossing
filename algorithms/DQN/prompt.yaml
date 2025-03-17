@@ -1,11 +1,10 @@
 prompt_template:
-  model: "llama2"  #Used model
+  model: "llama3:8b"  #Used model
   role: "user" #LLM role
   content: |
     Problem description and role: 
     You are an expert agent in a 4-way intersection. 
-    Your goal is to control the traffic light phases in a manner that maximizes the throughout
-    and minimizes the waiting time and travel time of every vehicle that uses the intersection. 
+    Your goal is to control the traffic light phases in a manner that minimizes waiting time, maximizes avarage speed of vehicles, minimizes CO2 and NOX emissions, minimizes halting vehicles..
     The current state of the intersection is defined by a vector that contain certain features about the traffic.
     This vector looks as follows: [LastStepMeanSpeed1, LastStepMeanSpeed2, LastStepMeanSpeed3, LastStepMeanSpeed4]
     The meaning of this features:
@@ -13,8 +12,10 @@ prompt_template:
     - LastStepMeanSpeed2: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] in lane 2. 
     - LastStepMeanSpeed3: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] of lane 3.
     - LastStepMeanSpeed4: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] of lane 4. 
-    The actions available in the action space that can control the intersection are the following:
+    You will also receive the waiting time, the average speed, the CO2 emission, the NOX emission and the number of halting vehicles.
+    The actions available in the action space that can control the intersection are the following.
     Actions set the phase of the traffic light to the given:
-    - 0: Green light North-South. 
-    - 1: Green light East-West. 
-    Please choose from these actions and give me your choice in JSON format.
+    - 0: Phase green light North-South. 
+    - 1: Phase green light East-West. 
+    Please choose from these actions to ensure your goals. 
+    Give me your choice in JSON format ONLY without additional text.
