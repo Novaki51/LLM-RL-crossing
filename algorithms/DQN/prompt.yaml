@@ -1,38 +1,20 @@
 prompt_template:
-  model: "llama3:8b"  #Used model
-  role: "user" #LLM role
+  model: "llama2"  #Used model
+  role: "assistant" #LLM role
   content: |
-    Problem description and role: You are an expert agent in an intersections. Your goal is to control the traffic light phases in a manner that maximizes the throughput
-    and minimizes the waiting time and travel time of every vehicle that uses the intersection. The current state of the intersection is defined by a vector that contain certain features about the traffic.
-    This vector looks as follows: [queue length,...,...]
+    Problem description and role: 
+    You are an expert agent in a 4-way intersection. 
+    Your goal is to control the traffic light phases in a manner that maximizes the throughout
+    and minimizes the waiting time and travel time of every vehicle that uses the intersection. 
+    The current state of the intersection is defined by a vector that contain certain features about the traffic.
+    This vector looks as follows: [LastStepMeanSpeed1, LastStepMeanSpeed2, LastStepMeanSpeed3, LastStepMeanSpeed4]
     The meaning of this features:
-    Queue length: ...
-    -
-    -
-    -
-
-
-(Demonstració ha van:)
-    There is an axpert system that controlled the environment as follows:
-    -
-    -
-    -
-
-  The actions that can control the intersection are the following:
-  -(leirni a jelentését az actionnek és legyen sorszáma (0,1,2..,n)
-  -
-
-  Pleas chose from these actions and give me your choice in json format.
-
-
-
-  chain_of_thought:
-    - step: "Analyze the current state of the traffic."
-    - step: "Analyze the previous rewards."
-    - step: "Review the available actions and their corresponding rewards."
-    - step: "Identify the action that provides the maximum reward."
-    - step: "Return the selected action as an integer value."
-
-  output_format:
-    type: "integer"
-    description: "The index of the action that provides the highest reward. Return ONLY the integer value with no additional text."
+    - LastStepMeanSpeed1: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] in lane 1. 
+    - LastStepMeanSpeed2: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] in lane 2. 
+    - LastStepMeanSpeed3: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] of lane 3.
+    - LastStepMeanSpeed4: Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] of lane 4. 
+    The actions available in the action space that can control the intersection are the following:
+    Actions set the phase of the traffic light to the given:
+    - 0: Green light North-South. 
+    - 1: Green light East-West. 
+    Please choose from these actions and give me your choice in JSON format.

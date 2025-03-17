@@ -57,15 +57,23 @@ class DQNAgent(object):
         with open('../algorithms/DQN/prompt.yaml', 'r') as file:
             return yaml.safe_load(file)
 
-    def extract_action(self, response_text):
+    def extract_action(self, response_text, action_space):
         """
         Extracts the first integer action from LLM response.
         """
-        match = re.search(r"\d+", response_text)  # Finds first integer
+        match = re.search(r"\*\*(\d+)\*\*", response_text)  # Find all numbers
         if match:
-            return int(match.group())  # Convert to integer
+            action = int(match.group(1))
         else:
-            print(f"[ERROR] Could not extract action from: {response_text}")
+            matches = re.findall(r"\b\d+\b", response_text)
+            if matches:
+                action = int(matches[-1])
+            else:
+                return 0
+        if action in action_space:
+            return action
+        else:
+            # print(f"[ERROR] Could not extract action from:")
             return 0  # Default fallback action
 
     def prompt_llm(self, state, action_space):
@@ -98,12 +106,12 @@ class DQNAgent(object):
             action_text = response.get("message", {}).get("content", "0")  # response
 
             action = self.extract_action(action_text)
-
+            """
             if action not in action_space:
                 #print(f"[WARNING] LLM selected invalid action: {action}.")
                 action = min(max(action, min(action_space)), max(action_space))
-
-            #print(f"\n[LLM QUERY] - State: {state}, Action Space: {action_space}, Reward: {self.latest_reward}")
+            """
+            print(f"\n[LLM QUERY] - State: {state}, Action Space: {action_space}, Reward: {self.latest_reward}")
             #print(f"[LLM RESPONSE] - Selected Action: {action}\n")
 
             return action
@@ -130,8 +138,9 @@ class DQNAgent(object):
                     state = self.env.get_state(signal)
                     state = torch.tensor(state, dtype=torch.float32, device=config["DEVICE"]).unsqueeze(0)
                     states.append(state)
-
-                    action_space = list(range((self.env.action_space.n)))
+                    #action_space = self.env.action_space.n
+                    #action_space = torch.arange(action_space)
+                    action_space = np.array([0,1])
                     action = self.prompt_llm(state.tolist(), action_space)
                     actions.append(action)
 

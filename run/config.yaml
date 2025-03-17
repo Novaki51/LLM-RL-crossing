@@ -9,16 +9,16 @@ RENDER_MODE : "sumo"
 # Run
 DEVICE : cpu
 SEED : 0
-mode : "train"
+mode : "test"
 
 #Hyperparameters
-ALPHA : 0.00025
+ALPHA : 0.0001
 GAMMA : 0.99
 EPSILON : 1.0
-EPSILON_DECAY : 0.995415
+EPSILON_DECAY : 0.9975415
 EPSILON_THRESHOLD: 0.1
 
 #Save
 PATH : "../algorithms/neural_networks/models/nm"
 #Load
-PATH_TEST : "../algorithms/neural_networks/models/nm/TrafficEnv_DQN_1711379816.1281295_1.pth"
+PATH_TEST : "../algorithms/neural_networks/models/TrafficEnv_DQN_1711379816.1281295_1.pth"
