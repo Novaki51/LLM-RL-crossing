@@ -1,6 +1,6 @@
 prompt_template:
   model: "llama2"  #Used model
-  role: "assistant" #LLM role
+  role: "user" #LLM role
   content: |
     Problem description and role: 
     You are an expert agent in a 4-way intersection. 

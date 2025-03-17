@@ -266,7 +266,7 @@ class TestTraffic:
         actuated = pd.DataFrame(actuated, columns=['data'])
         delayed = pd.DataFrame(delayed, columns=['data'])
         marl = pd.DataFrame(marl, columns=['data'])
-        llm = pd.DataFrame(llm, coloumns=['data'])
+        llm = pd.DataFrame(llm, columns=['data'])
 
         static['smoothed_data'] = static['data'].rolling(window=window_size).mean()
         actuated['smoothed_data'] = actuated['data'].rolling(window=window_size).mean()
