@@ -58,25 +58,29 @@ class TestTraffic:
         {prompt_template["content"]}
         Current State: {state}
         {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
-        {traci.lane.getWaitingTime(laneID="lane_0_0_1")}
-        {traci.lane.getWaitingTime(laneID="lane_0_0_2")}
-        {traci.lane.getWaitingTime(laneID="lane_0_0_3")}
+        {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
+        {traci.lane.getWaitingTime(laneID="lane_0_2_0")}
+        {traci.lane.getWaitingTime(laneID="lane_0_3_0")}
         {traci.lane.getLastStepMeanSpeed(laneID="lane_0_0_0")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_0_1")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_0_2")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_0_3")}
+        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_1_0")}
+        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_2_0")}
+        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_3_0")}
         {traci.lane.getCO2Emission(laneID="lane_0_0_0")}
-        {traci.lane.getCO2Emission(laneID="lane_0_0_1")}
-        {traci.lane.getCO2Emission(laneID="lane_0_0_2")}
-        {traci.lane.getCO2Emission(laneID="lane_0_0_3")}
+        {traci.lane.getCO2Emission(laneID="lane_0_1_0")}
+        {traci.lane.getCO2Emission(laneID="lane_0_2_0")}
+        {traci.lane.getCO2Emission(laneID="lane_0_3_0")}
         {traci.lane.getNOxEmission(laneID="lane_0_0_0")}
-        {traci.lane.getNOxEmission(laneID="lane_0_0_1")}
-        {traci.lane.getNOxEmission(laneID="lane_0_0_2")}
-        {traci.lane.getNOxEmission(laneID="lane_0_0_3")}
+        {traci.lane.getNOxEmission(laneID="lane_0_1_0")}
+        {traci.lane.getNOxEmission(laneID="lane_0_2_0")}
+        {traci.lane.getNOxEmission(laneID="lane_0_3_0")}
         {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_1")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_2")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_3")}
+        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0")}
+        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0")}
+        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")}
+        {traci.lane.getTraveltime(laneID="lane_0_0_0")}
+        {traci.lane.getTraveltime(laneID="lane_0_1_0")}
+        {traci.lane.getTraveltime(laneID="lane_0_2_0")}
+        {traci.lane.getTraveltime(laneID="lane_0_3_0")}
         Return a valid JSON object strictly in this format:
         ```json
         {{
@@ -233,9 +237,9 @@ class TestTraffic:
 
     def llm(self):
         print("Testing LLM...")
-        PATH = self.config["PATH_TEST"]
-        agent = torch.load(PATH, weights_only=False)
-        agent.eval()
+        #PATH = self.config["PATH_TEST"]
+        #agent = torch.load(PATH, weights_only=False)
+        #agent.eval()
         self.config["EPSILON"] = 0
         data = []
         for episode in range(self.config["EPISODES"]):
@@ -256,7 +260,7 @@ class TestTraffic:
                     action_space = list(range(action_space))
                     action = self.prompt_llm(state.tolist(), action_space)
                     actions.append(action)
-                    print(actions)
+                    #print(actions)
 
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
 
@@ -312,6 +316,7 @@ class TestTraffic:
         co2 = []
         nox = []
         halting_vehicles = []
+        travel_time = []
 
         for lane in self.env.network.instance.lanes:
             waiting_time.append(traci.lane.getWaitingTime(lane))
@@ -319,15 +324,17 @@ class TestTraffic:
             co2.append(traci.lane.getCO2Emission(lane))
             nox.append(traci.lane.getNOxEmission(lane))
             halting_vehicles.append(traci.lane.getLastStepHaltingNumber(lane))
+            travel_time.append(traci.lane.getTraveltime(lane))
 
         avg_waiting_time = np.mean(waiting_time)
         avg_speed = np.mean(speed)
         avg_co2 = np.mean(co2)
         avg_nox = np.mean(nox)
         avg_halting_vehicles = np.mean(halting_vehicles)
+        avg_travel_time = np.mean(travel_time)
         arrived_vehicles = traci.simulation.getArrivedNumber()
 
-        return [avg_waiting_time, avg_speed, avg_co2, avg_nox, avg_halting_vehicles, arrived_vehicles]
+        return [avg_waiting_time, avg_speed, avg_co2, avg_nox, avg_halting_vehicles, avg_travel_time, arrived_vehicles]
 
 if __name__ == '__main__':
     test = TestTraffic()
