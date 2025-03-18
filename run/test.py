@@ -254,7 +254,6 @@ class TestTraffic:
                     states.append(state)
                     action_space = self.env.action_space.n
                     action_space = list(range(action_space))
-                    #action_space = np.array([0,1])
                     action = self.prompt_llm(state.tolist(), action_space)
                     actions.append(action)
                     print(actions)
@@ -314,14 +313,12 @@ class TestTraffic:
         nox = []
         halting_vehicles = []
 
-
         for lane in self.env.network.instance.lanes:
             waiting_time.append(traci.lane.getWaitingTime(lane))
             speed.append(traci.lane.getLastStepMeanSpeed(lane))
             co2.append(traci.lane.getCO2Emission(lane))
             nox.append(traci.lane.getNOxEmission(lane))
             halting_vehicles.append(traci.lane.getLastStepHaltingNumber(lane))
-
 
         avg_waiting_time = np.mean(waiting_time)
         avg_speed = np.mean(speed)
