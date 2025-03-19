@@ -18,7 +18,7 @@ class TestTraffic:
         self.modes = ['simple', 'adaptive', 'TSC']
         self.data = namedtuple('Data',
                                 ('queue_length', 'waiting_time', 'co2',
-                                 'nox', 'halting_vehicles', 'arrived_vehicles'))
+                                 'nox', 'halting_vehicles', 'travel_time', 'arrived_vehicles'))
         self.parameters()
         self.env = TrafficEnvironment()
         self.action_selection = EpsilonGreedy(self.config, self.env)
@@ -57,30 +57,31 @@ class TestTraffic:
         prompt = f"""
         {prompt_template["content"]}
         Current State: {state}
-        {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
-        {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
-        {traci.lane.getWaitingTime(laneID="lane_0_2_0")}
-        {traci.lane.getWaitingTime(laneID="lane_0_3_0")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_0_0")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_1_0")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_2_0")}
-        {traci.lane.getLastStepMeanSpeed(laneID="lane_0_3_0")}
-        {traci.lane.getCO2Emission(laneID="lane_0_0_0")}
-        {traci.lane.getCO2Emission(laneID="lane_0_1_0")}
-        {traci.lane.getCO2Emission(laneID="lane_0_2_0")}
-        {traci.lane.getCO2Emission(laneID="lane_0_3_0")}
-        {traci.lane.getNOxEmission(laneID="lane_0_0_0")}
-        {traci.lane.getNOxEmission(laneID="lane_0_1_0")}
-        {traci.lane.getNOxEmission(laneID="lane_0_2_0")}
-        {traci.lane.getNOxEmission(laneID="lane_0_3_0")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0")}
-        {traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")}
-        {traci.lane.getTraveltime(laneID="lane_0_0_0")}
-        {traci.lane.getTraveltime(laneID="lane_0_1_0")}
-        {traci.lane.getTraveltime(laneID="lane_0_2_0")}
-        {traci.lane.getTraveltime(laneID="lane_0_3_0")}
+        Waiting times:
+        lane 1: {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
+        lane 2: {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
+        lane 3: {traci.lane.getWaitingTime(laneID="lane_0_2_0")}
+        lane 4: {traci.lane.getWaitingTime(laneID="lane_0_3_0")}
+        CO2 emissions:
+        lane 1: {traci.lane.getCO2Emission(laneID="lane_0_0_0")}
+        lane 2: {traci.lane.getCO2Emission(laneID="lane_0_1_0")}
+        lane 3: {traci.lane.getCO2Emission(laneID="lane_0_2_0")}
+        lane 4: {traci.lane.getCO2Emission(laneID="lane_0_3_0")}
+        NOx emissions: 
+        lane 1: {traci.lane.getNOxEmission(laneID="lane_0_0_0")}
+        lane 2: {traci.lane.getNOxEmission(laneID="lane_0_1_0")}
+        lane 3: {traci.lane.getNOxEmission(laneID="lane_0_2_0")}
+        lane 4: {traci.lane.getNOxEmission(laneID="lane_0_3_0")}
+        Number of Halting Vehicles: 
+        lane 1: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0")}
+        lane 2: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0")}
+        lane 3: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0")}
+        lane 4: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")}
+        Travel Times: 
+        lane 1: {traci.lane.getTraveltime(laneID="lane_0_0_0")}
+        lane 2: {traci.lane.getTraveltime(laneID="lane_0_1_0")}
+        lane 3: {traci.lane.getTraveltime(laneID="lane_0_2_0")}
+        lane 4: {traci.lane.getTraveltime(laneID="lane_0_3_0")}
         Return a valid JSON object strictly in this format:
         ```json
         {{
@@ -93,19 +94,21 @@ class TestTraffic:
         try:
             response = ollama.chat(
                 model=prompt_template["model"],
-                messages=[{"role": prompt_template["role"], "content": prompt}]
+                messages=[{"role": "user", "content": prompt}]
             )
             text = response.get("message", {}).get("content", "{}")
 
             # Parse JSON response
             response_json = json.loads(text)
             action = response_json.get("action")
+            #print(prompt)
             #print(response)
             #print(response_json)
             # Validate the extracted action
             if isinstance(action, int) and action in action_space:
                 return action
             else:
+                print("def")
                 return min(action_space)  # Default safe action if invalid
 
         except Exception as e:
@@ -123,26 +126,26 @@ class TestTraffic:
         delay_data = []
         marl_data = []
         llm_data = []
-        for i in range(5):
+        for i in range(6):
             simple_data.append(simple_data_in[:,i])
             actuated_data.append(actuated_data_in[:, i])
             delay_data.append(delay_data_in[:, i])
-            marl_data.append(marl_data_in[:,i])
-            llm_data.append(llm_data_in[:,i])
+            marl_data.append(marl_data_in[:, i])
+            llm_data.append(llm_data_in[:, i])
 
         print("\n")
         print("\t \t \t Waiting time \t \t \t \t AVG speed \t \t  \t \t CO2 \t \t \t \t \t \t  "
-              "NOx \t \t \t \t  \t \t  Halting Vehicles")
+              "NOx \t \t \t \t  \t \t  Halting Vehicles \t \t \t \t Travel Time")
         print(f"Static    : {np.mean(simple_data[0])} \t \t {np.mean(simple_data[1])} \t \t \t  {np.mean(simple_data[2])} "
-              f"\t \t  {np.mean(simple_data[3])} \t \t {np.sum(simple_data[4])}")
+              f"\t \t  {np.mean(simple_data[3])} \t \t {np.sum(simple_data[4])} \t \t \t \t {np.mean(simple_data[5])}")
         print(f"Actuated  : {np.mean(actuated_data[0])} \t \t {np.mean(actuated_data[1])} \t \t \t  {np.mean(actuated_data[2])} "
-              f"\t \t  {np.mean(actuated_data[3])} \t \t {np.sum(actuated_data[4])}")
+              f"\t \t  {np.mean(actuated_data[3])} \t \t {np.sum(actuated_data[4])} \t \t \t \t {np.mean(actuated_data[5])}")
         print(f"Delayed   : {np.mean(delay_data[0])} \t \t {np.mean(delay_data[1])} \t \t \t {np.mean(delay_data[2])} "
-              f"\t \t {np.mean(delay_data[3])} \t \t {np.sum(delay_data[4])}")
+              f"\t \t {np.mean(delay_data[3])} \t \t {np.sum(delay_data[4])} \t \t \t \t {np.mean(delay_data[5])}")
         print(f"MARL      : {np.mean(marl_data[0])} \t \t {np.mean(marl_data[1])} \t \t \t {np.mean(marl_data[2])} "
-              f"\t \t {np.mean(marl_data[3])} \t \t {np.sum(marl_data[4])}")
+              f"\t \t {np.mean(marl_data[3])} \t \t {np.sum(marl_data[4])} \t \t \t \t {np.mean(marl_data[5])}")
         print(f"LLM       : {np.mean(llm_data[0])} \t \t {np.mean(llm_data[1])} \t \t \t {np.mean(llm_data[2])} "
-              f"\t \t {np.mean(llm_data[3])} \t \t {np.sum(llm_data[4])}")
+              f"\t \t {np.mean(llm_data[3])} \t \t {np.sum(llm_data[4])} \t \t \t \t {np.mean(llm_data[5])}")
 
     def simple(self):
         print("Testing Simple...")
@@ -200,7 +203,7 @@ class TestTraffic:
         return data
 
     def marl(self):
-        print("Testing MARL...")
+        print("Testing RL...")
         data = []
         PATH = self.config["PATH_TEST"]
         agent = torch.load(PATH, weights_only=False)
@@ -231,8 +234,8 @@ class TestTraffic:
                 if terminated or truncated:
                     done = True
 
-            data_shape = int((np.shape(np.array(data).flatten())[0]) / 6)
-            data = np.reshape(data,(data_shape,6))
+            data_shape = int((np.shape(np.array(data).flatten())[0]) / 7)
+            data = np.reshape(data,(data_shape,7))
             return data
 
     def llm(self):
@@ -268,8 +271,8 @@ class TestTraffic:
                 if terminated or truncated:
                     done = True
 
-            data_shape = int((np.shape(np.array(data).flatten())[0]) / 6)
-            data = np.reshape(data, (data_shape, 6))
+            data_shape = int((np.shape(np.array(data).flatten())[0]) / 7)
+            data = np.reshape(data, (data_shape, 7))
             return data
 
     def plot(self, static, actuated, delayed, marl, llm):
@@ -301,7 +304,7 @@ class TestTraffic:
         plt.plot(x, actuated["smoothed_data"], label='Actuated',color='#0066CC')
         plt.plot(x, delayed["smoothed_data"], label='Delay Based',color='#009999')
         plt.plot(x, marl["smoothed_data"], label='MARL',color='#f90001')
-        plt.plot(x, llm["smoothed_data"], label='LLM',color='#ffffff')
+        plt.plot(x, llm["smoothed_data"], label='LLM',color='#000000')
         plt.legend(fontsize='large')
         plt.ylabel("Waiting time [s]")
         plt.grid(True, linewidth=1, linestyle='-', color='#ead1dc')

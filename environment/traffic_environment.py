@@ -121,7 +121,7 @@ class TrafficEnvironment(gym.Env):
         co2 = []
         nox = []
         halting_vehicles = []
-
+        travel_time = []
 
         for lane in self.network.instance.lanes:
             waiting_time.append(traci.lane.getWaitingTime(lane))
@@ -129,12 +129,14 @@ class TrafficEnvironment(gym.Env):
             co2.append(traci.lane.getCO2Emission(lane))
             nox.append(traci.lane.getNOxEmission(lane))
             halting_vehicles.append(traci.lane.getLastStepHaltingNumber(lane))
+            travel_time.append(traci.lane.getTraveltime(lane))
 
         avg_waiting_time = np.mean(waiting_time)
         avg_speed = np.mean(speed)
         avg_co2 = np.mean(co2)
         avg_nox = np.mean(nox)
         avg_halting_vehicles = np.mean(halting_vehicles)
+        avg_travel_time = np.mean(travel_time)
         arrived_vehicles = traci.simulation.getArrivedNumber()
 
-        return [avg_waiting_time, avg_speed, avg_co2, avg_nox, avg_halting_vehicles, arrived_vehicles]
+        return [avg_waiting_time, avg_speed, avg_co2, avg_nox, avg_halting_vehicles, avg_travel_time, arrived_vehicles]
