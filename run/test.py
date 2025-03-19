@@ -57,17 +57,17 @@ class TestTraffic:
         prompt = f"""
         {prompt_template["content"]}
         Current State: {state}
-        Waiting times:
+        Waiting time:
         lane 1: {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getWaitingTime(laneID="lane_0_2_0")}
         lane 4: {traci.lane.getWaitingTime(laneID="lane_0_3_0")}
-        CO2 emissions:
+        CO2 emission:
         lane 1: {traci.lane.getCO2Emission(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getCO2Emission(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getCO2Emission(laneID="lane_0_2_0")}
         lane 4: {traci.lane.getCO2Emission(laneID="lane_0_3_0")}
-        NOx emissions: 
+        NOx emission: 
         lane 1: {traci.lane.getNOxEmission(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getNOxEmission(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getNOxEmission(laneID="lane_0_2_0")}
@@ -77,7 +77,7 @@ class TestTraffic:
         lane 2: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0")}
         lane 4: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")}
-        Travel Times: 
+        Travel Time: 
         lane 1: {traci.lane.getTraveltime(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getTraveltime(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getTraveltime(laneID="lane_0_2_0")}

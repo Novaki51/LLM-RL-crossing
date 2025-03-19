@@ -12,14 +12,14 @@ prompt_template:
     The optimal value of average NOx emission is 3. 
     The optimal value of average travel time is 30000. 
     The current state of the intersection is defined by a vector that contain certain features about the traffic.
-    This vector looks as follows: [LastStepMeanSpeed0, LastStepMeanSpeed1, LastStepMeanSpeed2, LastStepMeanSpeed3]
+    This vector looks as follows: [LastStepMeanSpeed_0, LastStepMeanSpeed_1, LastStepMeanSpeed_2, LastStepMeanSpeed_3]
     The meaning of this features:
-    Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step [m/s] in the lane.
+    Returns the mean speed of vehicles that have been within the named multi-entry/multi-exit detector within the last simulation step in each lane.
     The indexes stand for lane indexes. Lane 0 and 2 are North-South, Lane 1 and 3 are West-East.
-    You will also receive the waiting time, the average speed, the CO2 emission, the NOX emission the number of halting vehicles and travel times for each lane.
+    You will receive the waiting time, the average speed, the CO2 emission, the NOX emission, the number of halting vehicles and travel time for each lane.
     The actions available in the action space that can control the intersection are the following.
     Actions set the phase of the traffic light to the given:
     - 0: Phase green light North-South. 
-    - 1: Phase green light West-East.    
+    - 1: Phase green light West-East. 
     Please choose from these actions to reach the optimal values.
     Give me your choice in JSON format ONLY without additional text.
