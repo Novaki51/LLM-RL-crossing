@@ -53,7 +53,7 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space, step_idx):
+    def prompt_llm(self, state, action_space, step_idx, llm_prev_actions):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
@@ -66,6 +66,7 @@ class TestTraffic:
         {prompt_template["content"]}
         Current State: {state}
         Previous Expert Actions: {previous_actions}
+        Previous LLM Actions: {llm_prev_actions}
         Waiting time:
         lane 1: {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
@@ -262,6 +263,7 @@ class TestTraffic:
             for warmup in range(self.env.config["WARMUP_STEPS"]):
                 traci.simulationStep()
             step_idx = 0
+            llm_prev_actions = []
             while not done:
                 states = []
                 actions = []
@@ -273,6 +275,7 @@ class TestTraffic:
                     action_space = list(range(action_space))
                     action = self.prompt_llm(state.tolist(), action_space, step_idx)
                     actions.append(action)
+                    llm_prev_actions.append(action)
                     #print(actions)
 
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
