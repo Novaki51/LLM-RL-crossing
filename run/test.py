@@ -23,6 +23,7 @@ class TestTraffic:
         self.env = TrafficEnvironment()
         self.action_selection = EpsilonGreedy(self.config, self.env)
         self.prompt_config = self.load_prompt_config()
+        self.expert_actions = self.load_expert_actions()
 
     def parameters(self) -> dict:
 
@@ -36,6 +37,11 @@ class TestTraffic:
         with open('../algorithms/DQN/prompt.yaml', 'r') as file:
             return yaml.safe_load(file)
 
+    def load_expert_actions(self, path='actions.json'):
+        with open(path, 'r') as file:
+            data = json.load(file)
+        return data['actions']
+
     def run(self):
         simple_data = self.simple()
         self.env.reset()
@@ -47,16 +53,19 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space):
+    def prompt_llm(self, state, action_space, step_idx):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
         prompt_template = self.prompt_config["prompt_template"]
 
+        previous_actions = self.expert_actions[:step_idx]
+
         prompt = f"""
         {prompt_template["content"]}
         Current State: {state}
+        Previous Expert Actions: {previous_actions}
         Waiting time:
         lane 1: {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
         lane 2: {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
@@ -82,6 +91,12 @@ class TestTraffic:
         lane 2: {traci.lane.getTraveltime(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getTraveltime(laneID="lane_0_2_0")}
         lane 4: {traci.lane.getTraveltime(laneID="lane_0_3_0")}
+        Return a valid JSON object strictly in this format:
+        ```json
+        {{
+            "action": <integer>
+        }}
+        ```
         The action must be one of the allowed values: {action_space}.
         """
 
@@ -246,6 +261,7 @@ class TestTraffic:
             #warmup
             for warmup in range(self.env.config["WARMUP_STEPS"]):
                 traci.simulationStep()
+            step_idx = 0
             while not done:
                 states = []
                 actions = []
@@ -255,7 +271,7 @@ class TestTraffic:
                     states.append(state)
                     action_space = self.env.action_space.n
                     action_space = list(range(action_space))
-                    action = self.prompt_llm(state.tolist(), action_space)
+                    action = self.prompt_llm(state.tolist(), action_space, step_idx)
                     actions.append(action)
                     #print(actions)
 
@@ -264,6 +280,7 @@ class TestTraffic:
                 data.append(episode_data)
                 if terminated or truncated:
                     done = True
+                step_idx += 1
 
             data_shape = int((np.shape(np.array(data).flatten())[0]) / 7)
             data = np.reshape(data, (data_shape, 7))
