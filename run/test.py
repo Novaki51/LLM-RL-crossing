@@ -82,12 +82,6 @@ class TestTraffic:
         lane 2: {traci.lane.getTraveltime(laneID="lane_0_1_0")}
         lane 3: {traci.lane.getTraveltime(laneID="lane_0_2_0")}
         lane 4: {traci.lane.getTraveltime(laneID="lane_0_3_0")}
-        Return a valid JSON object strictly in this format:
-        ```json
-        {{
-            "action": <integer>
-        }}
-        ```
         The action must be one of the allowed values: {action_space}.
         """
 
