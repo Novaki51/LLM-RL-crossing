@@ -7,7 +7,7 @@ environment : "TrafficEnv"
 RENDER_MODE : "sumo"
 
 # Run
-DEVICE : cuda
+DEVICE : cpu
 SEED : 0
 mode : "test"
 
@@ -19,6 +19,6 @@ EPSILON_DECAY : 0.9975415
 EPSILON_THRESHOLD: 0.1
 
 #Save
-PATH : "../algorithms/neural_networks/models/nm"
+PATH : "../algorithms/neural_networks/models/nm/llm"
 #Load
-PATH_TEST : "../algorithms/neural_networks/models/nm/TrafficEnv_DQN_1740681227.8100357_4.pth"
+PATH_TEST : "../algorithms/neural_networks/models/TrafficEnv_DQN_1711379816.1281295_1.pth"

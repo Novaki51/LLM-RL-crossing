@@ -37,8 +37,8 @@ class TestTraffic:
         with open('../algorithms/DQN/prompt.yaml', 'r') as file:
             return yaml.safe_load(file)
 
-    def load_expert_actions(self, path='actions.json'):
-        with open(path, 'r') as file:
+    def load_expert_actions(self):
+        with open('../algorithms/DQN/actions.json', 'r') as file:
             data = json.load(file)
         return data['actions']
 
@@ -53,45 +53,41 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space, step_idx, llm_prev_actions):
+    def prompt_llm(self, state, action_space, llm_prev_actions):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
         prompt_template = self.prompt_config["prompt_template"]
 
-        previous_actions = self.expert_actions[:step_idx]
+        previous_actions = self.expert_actions[:43]
 
         prompt = f"""
         {prompt_template["content"]}
         Current State: {state}
-        Previous Expert Actions: {previous_actions}
-        Previous LLM Actions: {llm_prev_actions}
-        Waiting time:
-        lane 1: {traci.lane.getWaitingTime(laneID="lane_0_0_0")}
-        lane 2: {traci.lane.getWaitingTime(laneID="lane_0_1_0")}
-        lane 3: {traci.lane.getWaitingTime(laneID="lane_0_2_0")}
-        lane 4: {traci.lane.getWaitingTime(laneID="lane_0_3_0")}
-        CO2 emission:
-        lane 1: {traci.lane.getCO2Emission(laneID="lane_0_0_0")}
-        lane 2: {traci.lane.getCO2Emission(laneID="lane_0_1_0")}
-        lane 3: {traci.lane.getCO2Emission(laneID="lane_0_2_0")}
-        lane 4: {traci.lane.getCO2Emission(laneID="lane_0_3_0")}
-        NOx emission: 
-        lane 1: {traci.lane.getNOxEmission(laneID="lane_0_0_0")}
-        lane 2: {traci.lane.getNOxEmission(laneID="lane_0_1_0")}
-        lane 3: {traci.lane.getNOxEmission(laneID="lane_0_2_0")}
-        lane 4: {traci.lane.getNOxEmission(laneID="lane_0_3_0")}
-        Number of Halting Vehicles: 
-        lane 1: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0")}
-        lane 2: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0")}
-        lane 3: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0")}
-        lane 4: {traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")}
-        Travel Time: 
-        lane 1: {traci.lane.getTraveltime(laneID="lane_0_0_0")}
-        lane 2: {traci.lane.getTraveltime(laneID="lane_0_1_0")}
-        lane 3: {traci.lane.getTraveltime(laneID="lane_0_2_0")}
-        lane 4: {traci.lane.getTraveltime(laneID="lane_0_3_0")}
+        An expert agent used this action sequence to get the best results: {previous_actions}.        
+        Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
+        If the last 4 elements of the {llm_prev_actions} array are the same, choose the other action.
+        Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0_0"),traci.lane.getWaitingTime(laneID="lane_0_1_0"), 
+                        traci.lane.getWaitingTime(laneID="lane_0_2_0"),
+                        traci.lane.getWaitingTime(laneID="lane_0_3_0")]}. Optimal: [0,0,0,0].
+        CO2 emission: {[traci.lane.getCO2Emission(laneID="lane_0_0_0"), 
+                        traci.lane.getCO2Emission(laneID="lane_0_1_0"), 
+                        traci.lane.getCO2Emission(laneID="lane_0_2_0"), 
+                        traci.lane.getCO2Emission(laneID="lane_0_3_0")]}. Optimal: [5000,5000,5000,5000].
+        NOx emission: {[traci.lane.getNOxEmission(laneID="lane_0_0_0"), 
+                        traci.lane.getNOxEmission(laneID="lane_0_1_0"), 
+                        traci.lane.getNOxEmission(laneID="lane_0_2_0"), 
+                        traci.lane.getNOxEmission(laneID="lane_0_3_0")]}. Optimal: [2,2,2,2].
+        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")]}. Optimal: [0,0,0,0].
+        Travel Time: {[traci.lane.getTraveltime(laneID="lane_0_0_0"), 
+                       traci.lane.getTraveltime(laneID="lane_0_1_0"), 
+                       traci.lane.getTraveltime(laneID="lane_0_2_0"), 
+                       traci.lane.getTraveltime(laneID="lane_0_3_0")]}. Optimal: [10,10,10,10].
+        If the values differ too much from the optimal values, try to choose different action than previously. 
         Return a valid JSON object strictly in this format:
         ```json
         {{
@@ -99,6 +95,8 @@ class TestTraffic:
         }}
         ```
         The action must be one of the allowed values: {action_space}.
+        Choose an action which is best for the defined goals. 
+        Return ONLY the JSON format without additional text.
         """
 
         try:
@@ -262,7 +260,6 @@ class TestTraffic:
             #warmup
             for warmup in range(self.env.config["WARMUP_STEPS"]):
                 traci.simulationStep()
-            step_idx = 0
             llm_prev_actions = []
             while not done:
                 states = []
@@ -273,7 +270,7 @@ class TestTraffic:
                     states.append(state)
                     action_space = self.env.action_space.n
                     action_space = list(range(action_space))
-                    action = self.prompt_llm(state.tolist(), action_space, step_idx)
+                    action = self.prompt_llm(state.tolist(), action_space, llm_prev_actions)
                     actions.append(action)
                     llm_prev_actions.append(action)
                     #print(actions)
@@ -283,7 +280,6 @@ class TestTraffic:
                 data.append(episode_data)
                 if terminated or truncated:
                     done = True
-                step_idx += 1
 
             data_shape = int((np.shape(np.array(data).flatten())[0]) / 7)
             data = np.reshape(data, (data_shape, 7))
