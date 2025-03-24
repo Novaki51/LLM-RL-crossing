@@ -4,7 +4,7 @@ prompt_template:
     You are an expert traffic controller agent managing a 4-way intersection. 
     Your goal is to optimize intersection performance and ensure flawless traffic flow by selecting the correct traffic light phase based on the objectives.
     Your objectives (for every lane):
-    Minimize average waiting time,
+    Minimize average waiting time (the consecutive time in where this vehicle was standing),
     Maximize average vehicle speed,
     Minimize average CO2 emissions,
     Minimize average NOx emissions,
