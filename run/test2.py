@@ -23,7 +23,6 @@ class TestTraffic:
         self.env = TrafficEnvironment()
         self.action_selection = EpsilonGreedy(self.config, self.env)
         self.prompt_config = self.load_prompt_config()
-        self.expert_actions = self.load_expert_actions()
 
     def parameters(self) -> dict:
 
@@ -48,14 +47,12 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space, llm_prev_actions):
+    def prompt_llm(self, action_space):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
         prompt_template = self.prompt_config["prompt_template"]
-
-        previous_actions = self.expert_actions[:43]
 
         prompt = f"""
         {prompt_template["content"]}
@@ -245,7 +242,7 @@ class TestTraffic:
                     states.append(state)
                     action_space = self.env.action_space.n
                     action_space = list(range(action_space))
-                    action = self.prompt_llm(state.tolist(), action_space, llm_prev_actions)
+                    action = self.prompt_llm(action_space)
                     actions.append(action)
                     llm_prev_actions.append(action)
                     #print(actions)
