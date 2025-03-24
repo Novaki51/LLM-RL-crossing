@@ -34,7 +34,7 @@ class TestTraffic:
         """
         Loads the prompt configuration from a YAML file.
         """
-        with open('../LLM/promptwt.yaml', 'r') as file:
+        with open('../LLM/prompt wt only/promptwt.yaml', 'r') as file:
             return yaml.safe_load(file)
 
     def run(self):
