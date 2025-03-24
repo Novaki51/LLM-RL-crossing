@@ -68,25 +68,26 @@ class TestTraffic:
         An expert agent used this action sequence to get the best results: {previous_actions}.        
         Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
         If the last 4 elements of the {llm_prev_actions} array are the same, choose the other action.
-        Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0_0"),traci.lane.getWaitingTime(laneID="lane_0_1_0"), 
-                        traci.lane.getWaitingTime(laneID="lane_0_2_0"),
-                        traci.lane.getWaitingTime(laneID="lane_0_3_0")]}. Optimal: [0,0,0,0].
-        CO2 emission: {[traci.lane.getCO2Emission(laneID="lane_0_0_0"), 
-                        traci.lane.getCO2Emission(laneID="lane_0_1_0"), 
-                        traci.lane.getCO2Emission(laneID="lane_0_2_0"), 
-                        traci.lane.getCO2Emission(laneID="lane_0_3_0")]}. Optimal: [5000,5000,5000,5000].
-        NOx emission: {[traci.lane.getNOxEmission(laneID="lane_0_0_0"), 
-                        traci.lane.getNOxEmission(laneID="lane_0_1_0"), 
-                        traci.lane.getNOxEmission(laneID="lane_0_2_0"), 
-                        traci.lane.getNOxEmission(laneID="lane_0_3_0")]}. Optimal: [2,2,2,2].
-        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="lane_0_0_0"), 
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_1_0"), 
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_2_0"), 
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0")]}. Optimal: [0,0,0,0].
-        Travel Time: {[traci.lane.getTraveltime(laneID="lane_0_0_0"), 
-                       traci.lane.getTraveltime(laneID="lane_0_1_0"), 
-                       traci.lane.getTraveltime(laneID="lane_0_2_0"), 
-                       traci.lane.getTraveltime(laneID="lane_0_3_0")]}. Optimal: [10,10,10,10].
+        Waiting time: {[traci.lane.getWaitingTime(laneID="-E0_0"),
+                        traci.lane.getWaitingTime(laneID="E1_0"), 
+                        traci.lane.getWaitingTime(laneID="-E2_0"),
+                        traci.lane.getWaitingTime(laneID="E3_0")]}. Optimal: [0,0,0,0].
+        CO2 emission: {[traci.lane.getCO2Emission(laneID="-E0_0"), 
+                        traci.lane.getCO2Emission(laneID="E1_0"), 
+                        traci.lane.getCO2Emission(laneID="-E2_0"), 
+                        traci.lane.getCO2Emission(laneID="E3_0")]}. Optimal: [5000,5000,5000,5000].
+        NOx emission: {[traci.lane.getNOxEmission(laneID="-E0_0"), 
+                        traci.lane.getNOxEmission(laneID="E1_0"), 
+                        traci.lane.getNOxEmission(laneID="-E2_0"), 
+                        traci.lane.getNOxEmission(laneID="E3_0")]}. Optimal: [2,2,2,2].
+        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="-E0_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="E1_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="-E2_0"), 
+                                      traci.lane.getLastStepHaltingNumber(laneID="E3_0")]}. Optimal: [0,0,0,0].
+        Travel Time: {[traci.lane.getTraveltime(laneID="-E0_0"), 
+                       traci.lane.getTraveltime(laneID="E1_0"), 
+                       traci.lane.getTraveltime(laneID="-E2_0"), 
+                       traci.lane.getTraveltime(laneID="E3_0")]}. Optimal: [10,10,10,10].
         If the values differ too much from the optimal values, try to choose different action than previously. 
         Return a valid JSON object strictly in this format:
         ```json

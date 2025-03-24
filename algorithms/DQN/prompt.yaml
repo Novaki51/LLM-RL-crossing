@@ -8,7 +8,7 @@ prompt_template:
     Maximize average vehicle speed,
     Minimize average CO2 emissions,
     Minimize average NOx emissions,
-    Minimize average number of halting vehicles,
+    Minimize average  number of halting vehicles,
     Minimize average travel time.
     Lane mapping:
     Lanes 0 and 2: North-South
