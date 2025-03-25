@@ -9,6 +9,7 @@ import matplotlib.style as style
 import pandas as pd
 import ollama
 import json
+import random
 
 from environment.traffic_environment import TrafficEnvironment
 from algorithms.DQN.epsilon_greedy import EpsilonGreedy
@@ -118,7 +119,7 @@ class TestTraffic:
                 return action
             else:
                 print("def")
-                return min(action_space)  # Default safe action if invalid
+                return random.choice([0,1])  # Default safe action if invalid
 
         except Exception as e:
             print(f"[ERROR] LLM query failed or returned invalid format: {e}")
