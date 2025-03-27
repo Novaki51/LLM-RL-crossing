@@ -19,9 +19,9 @@ prompt_template:
     1: Green Phase for West-East lanes (1 and 3).
     Additionally, you will be provided data per lane including waiting time, average speed, CO2 emissions, NOx emissions, number of halting vehicles, and travel time.
     You will also receive an expert action sequence and the previous actions chosen by you.
-    State represents the mean speed of vehicles that were on the lane within the last simulation step. 
+    Current State represents the mean speed of vehicles that were on the lane within the last simulation step. 
     Intersection data arrays contain 4 element each, representing [Lane 0, Lane 1, Lane 2, Lane 3].
-    Intersection data:
+    Choose an action which is best for the defined goals. 
     
   
     
