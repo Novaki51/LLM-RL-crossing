@@ -9,12 +9,14 @@ from algorithms.neural_networks.actor_critic import ActorNetwork, CriticNetwork
 from algorithms.PPO.ppo_memory import Memory
 from algorithms.logger import Logger
 from algorithms.io import IO
+from environment.traffic_environment import TrafficEnvironment
+
 
 class PPOAgent(object):
     def __init__(self, config):
-        with open('algorithms/PPO/ppo_config.yaml', 'r') as file:
+        with open('../algorithms/PPO/ppo_config.yaml', 'r') as file:
             self.ppo_config = yaml.safe_load(file)
-        self.env = gym.make(config["environment"], render_mode=config["RENDER_MODE"])
+        self.env = TrafficEnvironment()
         self.action_selection = EpsilonGreedy(config, self.env)
         self.config = config
         state_size = self.env.observation_space.shape[0]

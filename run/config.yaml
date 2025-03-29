@@ -1,5 +1,5 @@
 # Agent
-algorithm : "DQN"
+algorithm : "PPO"
 EPISODES : 1000
 
 # Environment
