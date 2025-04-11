@@ -1,5 +1,5 @@
 # Agent
-algorithm : "PPO"
+algorithm : "DQN"
 EPISODES : 1000
 
 # Environment
@@ -7,7 +7,7 @@ environment : "TrafficEnv"
 RENDER_MODE : "sumo"
 
 # Run
-DEVICE : cpu
+DEVICE : cuda
 SEED : 0
 mode : "test"
 

@@ -66,35 +66,30 @@ class TestTraffic:
         prompt = f"""
         {prompt_template["content"]}
         Intersection data:
-        Current State: {state}. Optimal: [10,10,10,10]. Do NOT have lower values than: [6,6,6,6]
-        An expert agent used this action sequence to get the best results: {previous_actions}.        
+        Current State: {state}. Optimal: [10,10,10,10]. 
+        Demonstration: An expert agent used this action sequence to get the best results: {previous_actions}.        
         Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
-        If the last 4 elements of the {llm_prev_actions} array are the same, choose the other action.
+        If the last 4 elements of the {llm_prev_actions} array are the same, choose different action.
         Waiting time: {[traci.lane.getWaitingTime(laneID="-E0_0"),
                         traci.lane.getWaitingTime(laneID="E1_0"),
                         traci.lane.getWaitingTime(laneID="-E2_0"),
-                        traci.lane.getWaitingTime(laneID="E3_0")]}. Optimal: [0,0,0,0], 
-                        Do NOT to have higher values than: [10,10,10,10].
+                        traci.lane.getWaitingTime(laneID="E3_0")]}. Optimal values: [0,0,0,0].
         CO2 emission: {[traci.lane.getCO2Emission(laneID="-E0_0"),
                         traci.lane.getCO2Emission(laneID="E1_0"),
                         traci.lane.getCO2Emission(laneID="-E2_0"),
-                        traci.lane.getCO2Emission(laneID="E3_0")]}. Optimal: [5000,5000,5000,5000], 
-                        Do NOT to have higher values than: [8000,8000,8000,8000].
+                        traci.lane.getCO2Emission(laneID="E3_0")]}. Optimal values: [5000,5000,5000,5000].
         NOx emission: {[traci.lane.getNOxEmission(laneID="-E0_0"),
                         traci.lane.getNOxEmission(laneID="E1_0"),
                         traci.lane.getNOxEmission(laneID="-E2_0"),
-                        traci.lane.getNOxEmission(laneID="E3_0")]}. Optimal: [2,2,2,2], 
-                        Do NOT to have higher values than: [5,5,5,5].
+                        traci.lane.getNOxEmission(laneID="E3_0")]}. Optimal values: [2,2,2,2].
         Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="-E0_0"),
                                       traci.lane.getLastStepHaltingNumber(laneID="E1_0"),
                                       traci.lane.getLastStepHaltingNumber(laneID="-E2_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="E3_0")]}. Optimal: [0,0,0,0], 
-                                      Do NOT to have higher values than: [3,3,3,3].
+                                      traci.lane.getLastStepHaltingNumber(laneID="E3_0")]}. Optimal values: [0,0,0,0].
         Travel Time: {[traci.lane.getTraveltime(laneID="-E0_0"),
                        traci.lane.getTraveltime(laneID="E1_0"),
                        traci.lane.getTraveltime(laneID="-E2_0"),
-                       traci.lane.getTraveltime(laneID="E3_0")]}. Optimal: [10,10,10,10], 
-                       Do NOT to have higher values than: [20,20,20,20].
+                       traci.lane.getTraveltime(laneID="E3_0")]}. Optimal values: [10,10,10,10].
         If the values differ too much from the optimal values, try to choose different action than previously. 
         Return a valid JSON object strictly in this format:
         ```json
@@ -125,7 +120,7 @@ class TestTraffic:
                 return action
             else:
                 print("def")
-                return random.choice([0,1])  # Default safe action if invalid
+                return random.choice([0,1])
 
         except Exception as e:
             print(f"[ERROR] LLM query failed or returned invalid format: {e}")

@@ -30,20 +30,24 @@ class PPOAgent(object):
     def train(self, config):
         score_history = []
         avg_score = []
+        actions = []
         number_of_steps = 0
         loss = 0
         for episode in range(config["EPISODES"]):
-            state, _  = self.env.reset(seed=self.seed)
+            state, _  = self.env.reset()
+            state = np.array(state, dtype=np.float32)
             done = False
             episode_reward = 0
             while not done:
                 number_of_steps += 1
                 action, probability, value = self.choose_action(torch.tensor(state))
-                next_state, reward, terminated, truncated, _ = self.env.step(action)
+                actions.append(action)
+                next_state, reward, terminated, truncated, _ = self.env.step(actions)
                 if terminated or truncated:
                     done = True
                 self.memory.push(state, action, probability, value, reward, done)
                 episode_reward += reward
+                state = np.array(state, dtype=np.float32)
                 state = next_state
                 if number_of_steps % self.ppo_config["TAU"] == 0:
                     loss = self.fit()
