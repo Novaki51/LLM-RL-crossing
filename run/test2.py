@@ -9,6 +9,7 @@ import matplotlib.style as style
 import pandas as pd
 import ollama
 import json
+import random
 
 from environment.traffic_environment import TrafficEnvironment
 from algorithms.DQN.epsilon_greedy import EpsilonGreedy
@@ -23,6 +24,7 @@ class TestTraffic:
         self.env = TrafficEnvironment()
         self.action_selection = EpsilonGreedy(self.config, self.env)
         self.prompt_config = self.load_prompt_config()
+        self.expert_actions = self.load_expert_actions()
 
     def parameters(self) -> dict:
 
@@ -33,8 +35,13 @@ class TestTraffic:
         """
         Loads the prompt configuration from a YAML file.
         """
-        with open('../LLM/prompt wt only/promptwt.yaml', 'r') as file:
+        with open('../algorithms/DQN/prompt2.yaml', 'r') as file:
             return yaml.safe_load(file)
+
+    def load_expert_actions(self):
+        with open('../algorithms/DQN/actions.json', 'r') as file:
+            data = json.load(file)
+        return data['actions']
 
     def run(self):
         simple_data = self.simple()
@@ -47,27 +54,72 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, action_space):
+    def prompt_llm(self, state, action_space1, action_space2, llm_prev_actions):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
         prompt_template = self.prompt_config["prompt_template"]
 
+        previous_actions = self.expert_actions[:43]
+
         prompt = f"""
         {prompt_template["content"]}
-        Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0_0"),
-                        traci.lane.getWaitingTime(laneID="lane_0_1_0"), 
-                        traci.lane.getWaitingTime(laneID="lane_0_2_0"),
-                        traci.lane.getWaitingTime(laneID="lane_0_3_0")]}. Optimal: [0,0,0,0].
-        Choose the action with the lowest possible waiting time.
-        The action must be one of the allowed values: {action_space}.
+        Intersection data:
+        Current State: {state}. Optimal: [10,10,10,10]. 
+        Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
+        If the last 4 elements of the {llm_prev_actions} array are the same, choose different action.
+        Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0"),
+                        traci.lane.getWaitingTime(laneID="lane_0_1"),
+                        traci.lane.getWaitingTime(laneID="lane_0_2"),
+                        traci.lane.getWaitingTime(laneID="lane_0_3"),
+                        traci.lane.getWaitingTime(laneID="lane_1_0"),
+                        traci.lane.getWaitingTime(laneID="lane_1_1"),
+                        traci.lane.getWaitingTime(laneID="lane_1_2"),
+                        traci.lane.getWaitingTime(laneID="lane_1_3")]}. Optimal values: [0,0,0,0,0,0,0,0].
+        CO2 emission: {[traci.lane.getCO2Emission(laneID="lane_0_0"),
+                        traci.lane.getCO2Emission(laneID="lane_0_1"),
+                        traci.lane.getCO2Emission(laneID="lane_0_2"),
+                        traci.lane.getCO2Emission(laneID="lane_0_3"),
+                        traci.lane.getCO2Emission(laneID="lane_1_0"),
+                        traci.lane.getCO2Emission(laneID="lane_1_1"),
+                        traci.lane.getCO2Emission(laneID="lane_1_2"),
+                        traci.lane.getCO2Emission(laneID="lane_1_3")]}. Optimal values: [5000,5000,5000,5000,5000,5000,5000,5000].
+        NOx emission: {[traci.lane.getNOxEmission(laneID="lane_0_0"),
+                        traci.lane.getNOxEmission(laneID="lane_0_1"),
+                        traci.lane.getNOxEmission(laneID="lane_0_2"),
+                        traci.lane.getNOxEmission(laneID="lane_0_3"),
+                        traci.lane.getNOxEmission(laneID="lane_1_0"),
+                        traci.lane.getNOxEmission(laneID="lane_1_1"),
+                        traci.lane.getNOxEmission(laneID="lane_1_2"),
+                        traci.lane.getNOxEmission(laneID="lane_1_3")]}. Optimal values: [2,2,2,2,2,2,2,2].
+        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="lane_0_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_1"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_2"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_3"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_1"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_2"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_3")]}. Optimal values: [0,0,0,0,0,0,0,0].
+        Travel Time: {[traci.lane.getTraveltime(laneID="lane_0_0"),
+                       traci.lane.getTraveltime(laneID="lane_0_1"),
+                       traci.lane.getTraveltime(laneID="lane_0_2"),
+                       traci.lane.getTraveltime(laneID="lane_0_3"),
+                       traci.lane.getTraveltime(laneID="lane_1_0"),
+                       traci.lane.getTraveltime(laneID="lane_1_1"),
+                       traci.lane.getTraveltime(laneID="lane_1_2"),
+                       traci.lane.getTraveltime(laneID="lane_1_3"),]}. Optimal values: [10,10,10,10,10,10,10,10].
+        If the values differ too much from the optimal values, try to choose different action than previously. 
         Return a valid JSON object strictly in this format:
         ```json
         {{
-            "action": <integer>
+            "action1": <integer>
+            "action2": <integer>
         }}
         ```
+        The action1 in Intersection 1 must be one of the allowed values: {action_space1}.
+        The action2 in Intersection 2 must be one of the allowed values: {action_space2}.
+        Choose an action in both intersections which is best for the defined goals. 
         Return ONLY the JSON format without additional text.
         """
 
@@ -80,16 +132,21 @@ class TestTraffic:
 
             # Parse JSON response
             response_json = json.loads(text)
-            action = response_json.get("action")
+            action1 = response_json.get("action1")
+            action2 = response_json.get("action2")
             #print(prompt)
             #print(response)
             #print(response_json)
-            # Validate the extracted action
-            if isinstance(action, int) and action in action_space:
-                return action
-            else:
+            # Validate the extracted actions
+            if not isinstance(action1, int) or action1 not in action_space1:
                 print("def")
-                return min(action_space)  # Default safe action if invalid
+                action1 = random.choice([0, 1])
+
+            if not isinstance(action2, int) or action2 not in action_space2:
+                print("def2")
+                action2 = random.choice([2, 3])
+
+            return action1, action2
 
         except Exception as e:
             print(f"[ERROR] LLM query failed or returned invalid format: {e}")
@@ -240,12 +297,14 @@ class TestTraffic:
                     state = self.env.get_state(signal)
                     state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
                     states.append(state)
-                    action_space = self.env.action_space.n
-                    action_space = list(range(action_space))
-                    action = self.prompt_llm(action_space)
+                    action_space1 = self.env.action_space[0:1]
+                    action_space1 = list(range(action_space1))
+                    action_space2 = self.env.action_space[2:3]
+                    action_space2 = list(range(action_space2))
+                    action = self.prompt_llm(state.tolist(), action_space1, action_space2, llm_prev_actions)
                     actions.append(action)
                     llm_prev_actions.append(action)
-                    #print(actions)
+                    print(actions)
 
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
 

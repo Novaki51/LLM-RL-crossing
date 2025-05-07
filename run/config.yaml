@@ -4,7 +4,7 @@ EPISODES : 1000
 
 # Environment
 environment : "TrafficEnv"
-RENDER_MODE : "sumo"
+RENDER_MODE : "sumo-gui"
 
 # Run
 DEVICE : cuda
