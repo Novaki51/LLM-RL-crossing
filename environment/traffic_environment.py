@@ -12,7 +12,7 @@ class TrafficEnvironment(gym.Env):
     def __init__(self):
 
         self.observation_space = gym.spaces.Box(low=0, high=1000, shape=(4,), dtype=np.float32)
-        self.action_space = gym.spaces.Discrete(4, seed=42)
+        self.action_space = gym.spaces.Discrete(2, seed=42)
         self.config()
         self.render()
         self.path = os.path.dirname(os.path.abspath(__file__))

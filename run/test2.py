@@ -54,21 +54,19 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space1, action_space2, llm_prev_actions):
+    def prompt_llm(self, state, action_space, llm_prev_actions):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
         prompt_template = self.prompt_config["prompt_template"]
 
-        previous_actions = self.expert_actions[:43]
-
         prompt = f"""
         {prompt_template["content"]}
         Intersection data:
         Current State: {state}. Optimal: [10,10,10,10]. 
-        Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
-        If the last 4 elements of the {llm_prev_actions} array are the same, choose different action.
+        Your previous chosen actions: {llm_prev_actions}. The last vector of the array is the last action pair chosen. 
+        If the last 4 vectors of the {llm_prev_actions} array are the same, choose different action.
         Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0"),
                         traci.lane.getWaitingTime(laneID="lane_0_1"),
                         traci.lane.getWaitingTime(laneID="lane_0_2"),
@@ -113,12 +111,10 @@ class TestTraffic:
         Return a valid JSON object strictly in this format:
         ```json
         {{
-            "action1": <integer>
-            "action2": <integer>
+            "action": [<integer1>, <integer2>]
         }}
         ```
-        The action1 in Intersection 1 must be one of the allowed values: {action_space1}.
-        The action2 in Intersection 2 must be one of the allowed values: {action_space2}.
+        The action in both intersections must be one of the allowed values: {action_space}.
         Choose an action in both intersections which is best for the defined goals. 
         Return ONLY the JSON format without additional text.
         """
@@ -132,21 +128,17 @@ class TestTraffic:
 
             # Parse JSON response
             response_json = json.loads(text)
-            action1 = response_json.get("action1")
-            action2 = response_json.get("action2")
+            action = response_json.get("action")
             #print(prompt)
-            #print(response)
-            #print(response_json)
+            print(state)
+            print(response)
+            print(response_json)
             # Validate the extracted actions
-            if not isinstance(action1, int) or action1 not in action_space1:
+            if not isinstance(action, int) or action not in action_space:
                 print("def")
-                action1 = random.choice([0, 1])
+                action = random.choice([0, 1])
 
-            if not isinstance(action2, int) or action2 not in action_space2:
-                print("def2")
-                action2 = random.choice([2, 3])
-
-            return action1, action2
+            return action
 
         except Exception as e:
             print(f"[ERROR] LLM query failed or returned invalid format: {e}")
@@ -297,11 +289,8 @@ class TestTraffic:
                     state = self.env.get_state(signal)
                     state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
                     states.append(state)
-                    action_space1 = self.env.action_space[0:1]
-                    action_space1 = list(range(action_space1))
-                    action_space2 = self.env.action_space[2:3]
-                    action_space2 = list(range(action_space2))
-                    action = self.prompt_llm(state.tolist(), action_space1, action_space2, llm_prev_actions)
+                    action_space = list(range(action_space))
+                    action = self.prompt_llm(state.tolist(), action_space, llm_prev_actions)
                     actions.append(action)
                     llm_prev_actions.append(action)
                     print(actions)
