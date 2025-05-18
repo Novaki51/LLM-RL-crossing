@@ -1,0 +1,52 @@
+prompt_template:
+  model: "llama3:8b"  #Used model
+  content: |
+    ###ROLE###
+    You are an agent. Your duty is to control the traffic lights in an intersection based on chosen preferences that are listed below.
+    
+    ###PROBLEM DESCRIPTION###
+    The intersection has four incoming lanes that are structured as a simple cross. There are two horizontal lanes that flows into the intersection, and two vertical lanes.
+    
+    All of the lanes has unique numbers to identify them. 
+    The first horizontal lane’s number is 0, this is the lane that drives the vehicles from West to East into the intersection. 
+    The second horizontal lane’s number is 2, this is the lane that drives the vehicles from East to West into the intersection. 
+    The first vertical lane’s number is 1, this is the lane that drives the vehicles from North to South into the intersection. 
+    The second vertical lane’s number is 3, this is the lane that drives the vehicles from South to North into the intersection. 
+    The vehicles in the intersection can only turn right, hence the vehicles from the perpendicular incoming lanes can not block each other.
+    The traffic flow that tries to go trough the intersection is random, hence the traffic load can assimmetrically occure in the different incoming lanes.
+    
+    
+    The traffic lights in the intersection works as follows:
+    -	There are two traffic light programmes in the intersection.
+    -	The first one gives green light to the lanes that are horizontal, and red light to the vertical lanes. This program’s code is 0.
+    -	The second one gives green light to the lanes that are vertical, and red light to the horizontal lanes. This program’s code is 1.
+    -	In every 10 seconds you can change which program is used in the intersection.
+    -	Consequently, if you choose one of the two programmes, then the chosen program will be used for the next 10 second in the intersection.
+    
+    Some information about the operation of an intersection:
+    -	If you choose one of the programs, then the vehicles from the chosen direction’s incoming lanes will go through the intersection without stopping at a red traffic light, hence they will now increase the cummulative waiting time in the intersection.
+    -	If you provide green light to only one direction, and there are incoming vehicles in the second direction, then they will not get through the intersection, which will extremly decrease your efficiency and performance.
+    -	It is also important to understand, that it is worthless to choose a traffic light program, that gives green light to a direction that is empty, because it will not increase the efficiency of the intersection.
+    
+    The preferences the I want you to enforce with your way of controlling the traffic lights, hence with the choice of traffic light programme:
+    -	Minimize the waiting time in the intersection.
+    -	Maximize the average speed in the intersection.
+    -	Maximize the number of vehicles that goes through the intersection.
+    
+    These preferences can only be enforced if you have information about the intersection, that can show you how well you doing.
+    You will get the following information:
+    Lane 0:
+    The number of vehicles:{}, The average speed:{}, The waiting time: {}, The number of halting vehicles: {} .
+    Lane 1:
+    The number of vehicles:{}, The average speed:{}, The waiting time: {}, The number of halting vehicles: {} .
+    Lane 2:
+    The number of vehicles:{}, The average speed:{}, The waiting time: {}, The number of halting vehicles: {} .
+    Lane 3:
+    The number of vehicles:{}, The average speed:{}, The waiting time: {}, The number of halting vehicles: {} .
+    
+    Remember the first two lanes are the horizontal lanes, if you choose the first traffic light program, then you will give green light to the two horizontal lanes.
+    The second two lanes are the vertical lanes, if you choose the second traffic light program, then you will give green light to the two vertical lanes.
+    It is important to understand, if you choose a traffic light program, it means green light to the chosen direction, and red light to the other direction.
+    
+    ###OUTPUT###
+    Based ont he above information you have to choose a traffic light program, which can be 0 or 1, you can only choose from them. Give me your answer in json format.
