@@ -15,20 +15,21 @@ prompt_template:
     Lanes 1 and 3: West-East for Intersection 1
     Lanes 4 and 6: North-South for Intersection 2
     Lanes 5 and 7: West-East for Intersection 2
+    Each lane represent the lanes where the incoming traffic flow comes from to the intersection.
     Action Space:
     One action vector consists of two values, both in a range 0-1. The returned action should look like this format: [integer1, integer2]
     Choose exactly one action vector with two values from the available options:
     First integer:
-    0: Green Phase for North-South lanes in Intersection 1 (0 and 2).
-    1: Green Phase for West-East lanes in Intersection 1 (1 and 3).
+    0: Green Phase for North-South lanes in Intersection 1 (Lane 0 and Lane 2).
+    1: Green Phase for West-East lanes in Intersection 1 (Lane 1 and Lane 3).
     Second integer:
     0: Green Phase for North-South lanes in Intersection 2 (4 and 6).
     1: Green Phase for West-East lanes in Intersection 2 (5 and 7).
     Additionally, you will be provided intersection data for each lane including waiting time, average speed, CO2 emissions, NOx emissions, number of halting vehicles, and travel time.
     You will also receive an expert action sequence and the previous actions chosen by you.
     Current State represents the mean speed of vehicles that were on the lanes within the last simulation step. 
-    Intersection data arrays contain 8 element each, representing [Lane 0, Lane 1, Lane 2, Lane 3, Lane 4, Lane 5, Lane 6, Lane 7].
-    Choose an action in both intersections which are the best for the defined goals. 
+    Intersection data arrays contain 8 element each, representing exactly [Lane 0, Lane 1, Lane 2, Lane 3, Lane 4, Lane 5, Lane 6, Lane 7].
+    Choose an action in both intersections and return the action pair which is the best for the defined goals. 
     
   
     

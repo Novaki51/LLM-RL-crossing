@@ -25,6 +25,7 @@ class TestTraffic:
         self.action_selection = EpsilonGreedy(self.config, self.env)
         self.prompt_config = self.load_prompt_config()
         self.expert_actions = self.load_expert_actions()
+        self.llm_cache = {}
 
     def parameters(self) -> dict:
 
@@ -39,7 +40,7 @@ class TestTraffic:
             return yaml.safe_load(file)
 
     def load_expert_actions(self):
-        with open('../algorithms/DQN/actions.json', 'r') as file:
+        with open('../algorithms/DQN/actions2.json', 'r') as file:
             data = json.load(file)
         return data['actions']
 
@@ -59,54 +60,58 @@ class TestTraffic:
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
+
         prompt_template = self.prompt_config["prompt_template"]
+
+        previous_actions = self.expert_actions[:43]
 
         prompt = f"""
         {prompt_template["content"]}
         Intersection data:
         Current State: {state}. Optimal: [10,10,10,10]. 
+        An expert agent used this action sequence to get the best results: {previous_actions}.
         Your previous chosen actions: {llm_prev_actions}. The last vector of the array is the last action pair chosen. 
         If the last 4 vectors of the {llm_prev_actions} array are the same, choose different action.
-        Waiting time: {[traci.lane.getWaitingTime(laneID="lane_0_0"),
-                        traci.lane.getWaitingTime(laneID="lane_0_1"),
-                        traci.lane.getWaitingTime(laneID="lane_0_2"),
-                        traci.lane.getWaitingTime(laneID="lane_0_3"),
-                        traci.lane.getWaitingTime(laneID="lane_1_0"),
-                        traci.lane.getWaitingTime(laneID="lane_1_1"),
-                        traci.lane.getWaitingTime(laneID="lane_1_2"),
-                        traci.lane.getWaitingTime(laneID="lane_1_3")]}. Optimal values: [0,0,0,0,0,0,0,0].
-        CO2 emission: {[traci.lane.getCO2Emission(laneID="lane_0_0"),
-                        traci.lane.getCO2Emission(laneID="lane_0_1"),
-                        traci.lane.getCO2Emission(laneID="lane_0_2"),
-                        traci.lane.getCO2Emission(laneID="lane_0_3"),
-                        traci.lane.getCO2Emission(laneID="lane_1_0"),
-                        traci.lane.getCO2Emission(laneID="lane_1_1"),
-                        traci.lane.getCO2Emission(laneID="lane_1_2"),
-                        traci.lane.getCO2Emission(laneID="lane_1_3")]}. Optimal values: [5000,5000,5000,5000,5000,5000,5000,5000].
-        NOx emission: {[traci.lane.getNOxEmission(laneID="lane_0_0"),
-                        traci.lane.getNOxEmission(laneID="lane_0_1"),
-                        traci.lane.getNOxEmission(laneID="lane_0_2"),
-                        traci.lane.getNOxEmission(laneID="lane_0_3"),
-                        traci.lane.getNOxEmission(laneID="lane_1_0"),
-                        traci.lane.getNOxEmission(laneID="lane_1_1"),
-                        traci.lane.getNOxEmission(laneID="lane_1_2"),
-                        traci.lane.getNOxEmission(laneID="lane_1_3")]}. Optimal values: [2,2,2,2,2,2,2,2].
-        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="lane_0_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_1"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_2"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_3"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_1"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_2"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_3")]}. Optimal values: [0,0,0,0,0,0,0,0].
-        Travel Time: {[traci.lane.getTraveltime(laneID="lane_0_0"),
-                       traci.lane.getTraveltime(laneID="lane_0_1"),
-                       traci.lane.getTraveltime(laneID="lane_0_2"),
-                       traci.lane.getTraveltime(laneID="lane_0_3"),
-                       traci.lane.getTraveltime(laneID="lane_1_0"),
-                       traci.lane.getTraveltime(laneID="lane_1_1"),
-                       traci.lane.getTraveltime(laneID="lane_1_2"),
-                       traci.lane.getTraveltime(laneID="lane_1_3"),]}. Optimal values: [10,10,10,10,10,10,10,10].
+        Waiting time: {[traci.lane.getWaitingTime(laneID="-E6_0"),
+                        traci.lane.getWaitingTime(laneID="-E0_0"),
+                        traci.lane.getWaitingTime(laneID="-E3_0"),
+                        traci.lane.getWaitingTime(laneID="lane_1_1_0"),
+                        traci.lane.getWaitingTime(laneID="-E5_0"),
+                        traci.lane.getWaitingTime(laneID="lane_0_3_0"),
+                        traci.lane.getWaitingTime(laneID="-E4_0"),
+                        traci.lane.getWaitingTime(laneID="E2_0")]}. Optimal values: [0,0,0,0,0,0,0,0].
+        CO2 emission: {[traci.lane.getCO2Emission(laneID="-E6_0"),
+                        traci.lane.getCO2Emission(laneID="-E0_0"),
+                        traci.lane.getCO2Emission(laneID="-E3_0"),
+                        traci.lane.getCO2Emission(laneID="lane_1_1_0"),
+                        traci.lane.getCO2Emission(laneID="-E5_0"),
+                        traci.lane.getCO2Emission(laneID="lane_0_3_0"),
+                        traci.lane.getCO2Emission(laneID="-E4_0"),
+                        traci.lane.getCO2Emission(laneID="E2_0")]}. Optimal values: [5000,5000,5000,5000,5000,5000,5000,5000].
+        NOx emission: {[traci.lane.getNOxEmission(laneID="-E6_0"),
+                        traci.lane.getNOxEmission(laneID="-E0_0"),
+                        traci.lane.getNOxEmission(laneID="-E3_0"),
+                        traci.lane.getNOxEmission(laneID="lane_1_1_0"),
+                        traci.lane.getNOxEmission(laneID="-E5_0"),
+                        traci.lane.getNOxEmission(laneID="lane_0_3_0"),
+                        traci.lane.getNOxEmission(laneID="-E4_0"),
+                        traci.lane.getNOxEmission(laneID="E2_0")]}. Optimal values: [2,2,2,2,2,2,2,2].
+        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="-E6_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="-E0_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="-E3_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_1_1_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="-E5_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="-E4_0"),
+                                      traci.lane.getLastStepHaltingNumber(laneID="E2_0")]}. Optimal values: [0,0,0,0,0,0,0,0].
+        Travel Time: {[traci.lane.getTraveltime(laneID="-E6_0"),
+                       traci.lane.getTraveltime(laneID="-E0_0"),
+                       traci.lane.getTraveltime(laneID="-E3_0"),
+                       traci.lane.getTraveltime(laneID="lane_1_1_0"),
+                       traci.lane.getTraveltime(laneID="-E5_0"),
+                       traci.lane.getTraveltime(laneID="lane_0_3_0"),
+                       traci.lane.getTraveltime(laneID="-E4_0"),
+                       traci.lane.getTraveltime(laneID="E2_0"),]}. Optimal values: [10,10,10,10,10,10,10,10].
         If the values differ too much from the optimal values, try to choose different action than previously. 
         Return a valid JSON object strictly in this format:
         ```json
@@ -130,16 +135,22 @@ class TestTraffic:
             response_json = json.loads(text)
             action = response_json.get("action")
             #print(prompt)
-            print(state)
-            print(response)
-            print(response_json)
+            #print(state)
+            #print(response)
+            #print(response_json)
+            """
             # Validate the extracted actions
-            if not isinstance(action, int) or action not in action_space:
-                print("def")
-                action = random.choice([0, 1])
-
+            if (
+                isinstance(action, list) and
+                len(action) == 2 and
+                all(isinstance(a, int) and a in action_space for a in action)
+            ):
+            """
             return action
-
+            """
+            else:
+                print("Invalid action from LLM")
+            """
         except Exception as e:
             print(f"[ERROR] LLM query failed or returned invalid format: {e}")
 
@@ -235,7 +246,7 @@ class TestTraffic:
         print("Testing RL...")
         data = []
         PATH = self.config["PATH_TEST"]
-        agent = torch.load(PATH, weights_only=False)
+        agent = torch.load(PATH, map_location=torch.device('cpu'))
         agent.eval()
         self.config["EPSILON"] = 0
 
@@ -258,6 +269,7 @@ class TestTraffic:
                     states.append(state)
                     action = self.action_selection.epsilon_greedy_selection(agent, state)
                     actions.append(action)
+                    #print(actions)
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
                 data.append(episode_data)
                 if terminated or truncated:
@@ -284,18 +296,18 @@ class TestTraffic:
             llm_prev_actions = []
             while not done:
                 states = []
-                actions = []
                 for signal in self.env.network.instance.traffic_light:
                     state = self.env.get_state(signal)
                     state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
                     states.append(state)
-                    action_space = list(range(action_space))
+                    action_space = self.env.action_space.n
+                    #action_space = list(range(action_space))
                     action = self.prompt_llm(state.tolist(), action_space, llm_prev_actions)
-                    actions.append(action)
+                    #action.append(action)
                     llm_prev_actions.append(action)
-                    print(actions)
+                    print(action)
 
-                observation, reward, terminated, truncated, episode_data = self.env.step(actions)
+                observation, reward, terminated, truncated, episode_data = self.env.step(action)
 
                 data.append(episode_data)
                 if terminated or truncated:
