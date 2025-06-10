@@ -32,9 +32,6 @@ class TrafficEnvironment(gym.Env):
         """
         TLS incoming lanes states
         """
-        if action is None:
-            print(f"[ERROR] Received None action for signal {signal}. Defaulting to 0.")
-            action = 0  # Default safe action
         action = action * 2
         traci.trafficlight.setPhase(signal, action)
 
