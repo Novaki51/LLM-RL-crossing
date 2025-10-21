@@ -38,7 +38,7 @@ class TestTraffic:
         with open('../algorithms/DQN/prompt.yaml', 'r') as file:
             return yaml.safe_load(file)
 
-    def load_expert_actions(self, path='actions.json'):
+    def load_expert_actions(self, path='../algorithms/DQN/actions.json'):
         with open(path, 'r') as file:
             data = json.load(file)
         return data['actions']
@@ -114,7 +114,7 @@ json
             response_json = json.loads(text)
             action = response_json.get("action")
             # print(prompt)
-            # print(response)
+            print(response)
             # print(response_json)
             # Validate the extracted action
             if isinstance(action, int) and action in action_space:
@@ -277,10 +277,10 @@ json
                     states.append(state)
                     action_space = self.env.action_space.n
                     action_space = list(range(action_space))
-                    action = self.prompt_llm(state.tolist(), action_space, step_idx)
+                    action = self.prompt_llm(state.tolist(), action_space, step_idx, llm_prev_actions)
                     actions.append(action)
                     llm_prev_actions.append(action)
-                    # print(actions)
+                    print(actions)
 
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
 

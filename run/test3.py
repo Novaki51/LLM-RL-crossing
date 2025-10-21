@@ -1,3 +1,4 @@
+import time
 from collections import namedtuple
 import traci
 import torch
@@ -14,6 +15,15 @@ import random
 from environment.traffic_environment import TrafficEnvironment
 from algorithms.DQN.epsilon_greedy import EpsilonGreedy
 
+def timed(func):
+    def wrapper(*args, **kwargs):
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"[TIME] {func.__name__} executed in {end - start:.3f} seconds")
+        return result
+    return wrapper
+
 class TestTraffic:
     def __init__(self):
         self.modes = ['simple', 'adaptive', 'TSC']
@@ -25,21 +35,18 @@ class TestTraffic:
         self.action_selection = EpsilonGreedy(self.config, self.env)
         self.prompt_config = self.load_prompt_config()
         self.expert_actions = self.load_expert_actions()
+        self.llm_cache = {}
 
     def parameters(self) -> dict:
-
         with open('config.yaml', 'r') as file:
             self.config = yaml.safe_load(file)
 
     def load_prompt_config(self) -> dict:
-        """
-        Loads the prompt configuration from a YAML file.
-        """
-        with open('../algorithms/DQN/promptisti.yaml', 'r') as file:
+        with open('../algorithms/DQN/prompt3.yaml', 'r') as file:
             return yaml.safe_load(file)
 
     def load_expert_actions(self):
-        with open('../algorithms/DQN/actions.json', 'r') as file:
+        with open('../algorithms/DQN/actions3.json', 'r') as file:
             data = json.load(file)
         return data['actions']
 
@@ -54,83 +61,125 @@ class TestTraffic:
         self.print_results(simple_data, actuated_data, delay_data, marl_data, llm_data)
         self.plot(simple_data, actuated_data, delay_data, marl_data, llm_data)
 
-    def prompt_llm(self, state, action_space, llm_prev_actions):
+    def prompt_llm(self, state, action_space, llm_prev_actions, retries=5, delay=2):
         """
         Queries the locally running Llama model via Ollama to select the best action,
         ensuring compliance with the output format and valid action range.
         """
+
         prompt_template = self.prompt_config["prompt_template"]
 
         previous_actions = self.expert_actions[:43]
 
         prompt = f"""
-        {prompt_template["content"]}
-        Intersection data:
-        Current State: {state}. Optimal: [10,10,10,10]. Do NOT have lower values than: [6,6,6,6]
-        An expert agent used this action sequence to get the best results: {previous_actions}.        
-        Your previous chosen actions: {llm_prev_actions}. The last element of the array is the last action chosen. 
-        If the last 4 elements of the {llm_prev_actions} array are the same, choose the other action.
-        Waiting time: {[traci.lane.getWaitingTime(laneID="-E0_0"),
-                        traci.lane.getWaitingTime(laneID="E1_0"),
-                        traci.lane.getWaitingTime(laneID="-E2_0"),
-                        traci.lane.getWaitingTime(laneID="E3_0")]}. Optimal: [0,0,0,0], 
-                        Do NOT to have higher values than: [10,10,10,10].
-        CO2 emission: {[traci.lane.getCO2Emission(laneID="-E0_0"),
-                        traci.lane.getCO2Emission(laneID="E1_0"),
-                        traci.lane.getCO2Emission(laneID="-E2_0"),
-                        traci.lane.getCO2Emission(laneID="E3_0")]}. Optimal: [5000,5000,5000,5000], 
-                        Do NOT to have higher values than: [8000,8000,8000,8000].
-        NOx emission: {[traci.lane.getNOxEmission(laneID="-E0_0"),
-                        traci.lane.getNOxEmission(laneID="E1_0"),
-                        traci.lane.getNOxEmission(laneID="-E2_0"),
-                        traci.lane.getNOxEmission(laneID="E3_0")]}. Optimal: [2,2,2,2], 
-                        Do NOT to have higher values than: [5,5,5,5].
-        Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="-E0_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="E1_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="-E2_0"),
-                                      traci.lane.getLastStepHaltingNumber(laneID="E3_0")]}. Optimal: [0,0,0,0], 
-                                      Do NOT to have higher values than: [3,3,3,3].
-        Travel Time: {[traci.lane.getTraveltime(laneID="-E0_0"),
-                       traci.lane.getTraveltime(laneID="E1_0"),
-                       traci.lane.getTraveltime(laneID="-E2_0"),
-                       traci.lane.getTraveltime(laneID="E3_0")]}. Optimal: [10,10,10,10], 
-                       Do NOT to have higher values than: [20,20,20,20].
-        If the values differ too much from the optimal values, try to choose different action than previously. 
-        Return a valid JSON object strictly in this format:
-        ```json
-        {{
-            "action": <integer>
-        }}
-        ```
-        The action must be one of the allowed values: {action_space}.
-        Choose an action which is best for the defined goals. 
-        Return ONLY the JSON format without additional text.
-        """
+            {prompt_template["content"]}
+            Intersection data:
+            Current State: {state}. Optimal: [10.0, 10.0, 10.0, 10.0]. 
+            An expert agent used this action sequence to get the best results: {previous_actions}.
+            Your previous chosen actions: {llm_prev_actions}. The last vector of the array is the last action pair chosen. 
+            If the last 4 vectors of the previous actions array are the same, choose different action.
+            Waiting time: {[traci.lane.getWaitingTime(laneID="-E4_0"),
+                            traci.lane.getWaitingTime(laneID="-E0_0"),
+                            traci.lane.getWaitingTime(laneID="-E5_0"),
+                            traci.lane.getWaitingTime(laneID="lane_0_3_0"),
+                            traci.lane.getWaitingTime(laneID="-E7_0"),
+                            traci.lane.getWaitingTime(laneID="lane_1_1_0"),
+                            traci.lane.getWaitingTime(laneID="-E6_0"),
+                            traci.lane.getWaitingTime(laneID="lane_1_3_0"),
+                            traci.lane.getWaitingTime(laneID="-E8_0"),
+                            traci.lane.getWaitingTime(laneID="lane_2_1_0"),
+                            traci.lane.getWaitingTime(laneID="-E9_0"),
+                            traci.lane.getWaitingTime(laneID="E3_0")]}. Optimal values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0].
+            CO2 emission: {[traci.lane.getCO2Emission(laneID="-E4_0"),
+                            traci.lane.getCO2Emission(laneID="-E0_0"),
+                            traci.lane.getCO2Emission(laneID="-E5_0"),
+                            traci.lane.getCO2Emission(laneID="lane_0_3_0"),
+                            traci.lane.getCO2Emission(laneID="-E7_0"),
+                            traci.lane.getCO2Emission(laneID="lane_1_1_0"),
+                            traci.lane.getCO2Emission(laneID="-E6_0"),
+                            traci.lane.getCO2Emission(laneID="lane_1_3_0"),
+                            traci.lane.getCO2Emission(laneID="-E8_0"),
+                            traci.lane.getCO2Emission(laneID="lane_2_1_0"),
+                            traci.lane.getCO2Emission(laneID="-E9_0"),
+                            traci.lane.getCO2Emission(laneID="E3_0")]}. Optimal values: [5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0, 5000.0].
+            NOx emission: {[traci.lane.getNOxEmission(laneID="-E4_0"),
+                            traci.lane.getNOxEmission(laneID="-E0_0"),
+                            traci.lane.getNOxEmission(laneID="-E5_0"),
+                            traci.lane.getNOxEmission(laneID="lane_0_3_0"),
+                            traci.lane.getNOxEmission(laneID="-E7_0"),
+                            traci.lane.getNOxEmission(laneID="lane_1_1_0"),
+                            traci.lane.getNOxEmission(laneID="-E6_0"),
+                            traci.lane.getNOxEmission(laneID="lane_1_3_0"),
+                            traci.lane.getNOxEmission(laneID="-E8_0"),
+                            traci.lane.getNOxEmission(laneID="lane_2_1_0"),
+                            traci.lane.getNOxEmission(laneID="-E9_0"),
+                            traci.lane.getNOxEmission(laneID="E3_0")]}. Optimal values: [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0].
+            Number of Halting Vehicles: {[traci.lane.getLastStepHaltingNumber(laneID="-E4_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E0_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E5_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="lane_0_3_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E7_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="lane_1_1_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E6_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="lane_1_3_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E8_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="lane_2_1_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="-E9_0"),
+                                          traci.lane.getLastStepHaltingNumber(laneID="E3_0")]}. Optimal values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0].
+            Travel Time: {[traci.lane.getTraveltime(laneID="-E4_0"),
+                           traci.lane.getTraveltime(laneID="-E0_0"),
+                           traci.lane.getTraveltime(laneID="-E5_0"),
+                           traci.lane.getTraveltime(laneID="lane_0_3_0"),
+                           traci.lane.getTraveltime(laneID="-E7_0"),
+                           traci.lane.getTraveltime(laneID="lane_1_1_0"),
+                           traci.lane.getTraveltime(laneID="-E6_0"),
+                           traci.lane.getTraveltime(laneID="lane_1_3_0"),
+                           traci.lane.getTraveltime(laneID="-E8_0"),
+                           traci.lane.getTraveltime(laneID="lane_2_1_0"),
+                           traci.lane.getTraveltime(laneID="-E9_0"),
+                           traci.lane.getTraveltime(laneID="E3_0")]}. Optimal values: [10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0].
+            If the values differ too much from the optimal values, try to choose different action than previously. 
+            Return a valid JSON object strictly in this json format:
 
-        try:
-            response = ollama.chat(
-                model=prompt_template["model"],
-                messages=[{"role": "user", "content": prompt}]
-            )
-            text = response.get("message", {}).get("content", "{}")
+            json
+            {{
+                "action": [int, int, int]
+            }}
 
-            # Parse JSON response
-            response_json = json.loads(text)
-            action = response_json.get("action")
-            #print(prompt)
-            print(response)
-            #print(response_json)
-            # Validate the extracted action
-            if isinstance(action, int) and action in action_space:
-                return action
-            else:
-                print("def")
-                return random.choice([0,1])  # Default safe action if invalid
+            The action in all three intersections must be one of the allowed values: 0 or 1.
+            The action vectors you can choose from are [0,0,0], [0,0,1], [0,1,1], [1,1,1], [1,1,0], [1,0,0].
+            Choose an action in all intersections which is best for the defined goals. 
+            Return ONLY the json format WITHOUT additional text.
+            """
 
-        except Exception as e:
-            print(f"[ERROR] LLM query failed or returned invalid format: {e}")
+        for attempt in range(retries):
+            try:
+                response = ollama.chat(
+                    model=prompt_template["model"],
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                text = response.get("message", {}).get("content", "{}")
+                response_json = json.loads(text)
+                #print(response_json)
+                action = response_json.get("action")
 
-    def print_results(self,simple_data_in, actuated_data_in, delay_data_in, marl_data_in, llm_data_in):
+                if (
+                        isinstance(action, list) and
+                        len(action) == 3 and
+                        all(isinstance(a, int) for a in action)
+                ):
+                    max_phase_index = max(action_space) if isinstance(action_space, list) else action_space - 1
+                    return [min(max(a, 0), max_phase_index) for a in action]
+
+                print(f"[WARNING] Invalid action format on attempt {attempt + 1}: {action}")
+            except Exception as e:
+                print(f"[ERROR] LLM query failed on attempt {attempt + 1}: {e}")
+                time.sleep(delay)
+
+        print("[FALLBACK] Using default action [0, 0] after all retries failed.")
+        return [0, 0, 0]
+
+    def print_results(self, simple_data_in, actuated_data_in, delay_data_in, marl_data_in, llm_data_in):
 
         simple_data_in = np.array(simple_data_in)
         actuated_data_in = np.array(actuated_data_in)
@@ -143,7 +192,7 @@ class TestTraffic:
         marl_data = []
         llm_data = []
         for i in range(6):
-            simple_data.append(simple_data_in[:,i])
+            simple_data.append(simple_data_in[:, i])
             actuated_data.append(actuated_data_in[:, i])
             delay_data.append(delay_data_in[:, i])
             marl_data.append(marl_data_in[:, i])
@@ -152,21 +201,24 @@ class TestTraffic:
         print("\n")
         print("\t \t \t Waiting time \t \t \t \t AVG speed \t \t  \t \t CO2 \t \t \t \t \t \t  "
               "NOx \t \t \t \t  \t \t  Halting Vehicles \t \t \t \t Travel Time")
-        print(f"Static    : {np.mean(simple_data[0])} \t \t {np.mean(simple_data[1])} \t \t \t  {np.mean(simple_data[2])} "
-              f"\t \t  {np.mean(simple_data[3])} \t \t {np.sum(simple_data[4])} \t \t \t \t {np.mean(simple_data[5])}")
-        print(f"Actuated  : {np.mean(actuated_data[0])} \t \t {np.mean(actuated_data[1])} \t \t \t  {np.mean(actuated_data[2])} "
-              f"\t \t  {np.mean(actuated_data[3])} \t \t {np.sum(actuated_data[4])} \t \t \t \t {np.mean(actuated_data[5])}")
-        print(f"Delayed   : {np.mean(delay_data[0])} \t \t {np.mean(delay_data[1])} \t \t \t {np.mean(delay_data[2])} "
-              f"\t \t {np.mean(delay_data[3])} \t \t {np.sum(delay_data[4])} \t \t \t \t {np.mean(delay_data[5])}")
+        print(
+            f"Static    : {np.mean(simple_data[0])} \t \t {np.mean(simple_data[1])} \t \t \t  {np.mean(simple_data[2])} "
+            f"\t \t  {np.mean(simple_data[3])} \t \t {np.sum(simple_data[4])} \t \t \t \t {np.mean(simple_data[5])}")
+        print(
+            f"Actuated  : {np.mean(actuated_data[0])} \t \t {np.mean(actuated_data[1])} \t \t \t  {np.mean(actuated_data[2])} "
+            f"\t \t  {np.mean(actuated_data[3])} \t \t {np.sum(actuated_data[4])} \t \t \t \t {np.mean(actuated_data[5])}")
+        print(
+            f"Delayed   : {np.mean(delay_data[0])} \t \t {np.mean(delay_data[1])} \t \t \t {np.mean(delay_data[2])} "
+            f"\t \t {np.mean(delay_data[3])} \t \t {np.sum(delay_data[4])} \t \t \t \t {np.mean(delay_data[5])}")
         print(f"MARL      : {np.mean(marl_data[0])} \t \t {np.mean(marl_data[1])} \t \t \t {np.mean(marl_data[2])} "
               f"\t \t {np.mean(marl_data[3])} \t \t {np.sum(marl_data[4])} \t \t \t \t {np.mean(marl_data[5])}")
         print(f"LLM       : {np.mean(llm_data[0])} \t \t {np.mean(llm_data[1])} \t \t \t {np.mean(llm_data[2])} "
               f"\t \t {np.mean(llm_data[3])} \t \t {np.sum(llm_data[4])} \t \t \t \t {np.mean(llm_data[5])}")
 
+    @timed
     def simple(self):
         print("Testing Simple...")
         data = []
-        arrived = 0
         for signal in self.env.signals:
             traci.trafficlight.setProgram(signal, "static")
         for warmup in range(self.env.config["WARMUP_STEPS"]):
@@ -178,17 +230,14 @@ class TestTraffic:
             data.append(self.log_values())
         return data
 
+    @timed
     def actuated(self):
         print("Testing Actuated...")
         data = []
-        arrived = 0
-
         for signal in self.env.signals:
             traci.trafficlight.setProgram(signal, "static")
-
         for warmup in range(self.env.config["WARMUP_STEPS"]):
             traci.simulationStep()
-
         for signal in self.env.signals:
             traci.trafficlight.setProgram(signal, "actuated")
 
@@ -198,17 +247,14 @@ class TestTraffic:
             data.append(self.log_values())
         return data
 
+    @timed
     def delay_based(self):
         print("Testing DelayBased...")
         data = []
-        arrived = 0
-
         for signal in self.env.signals:
             traci.trafficlight.setProgram(signal, "static")
-
         for warmup in range(self.env.config["WARMUP_STEPS"]):
             traci.simulationStep()
-
         for signal in self.env.signals:
             traci.trafficlight.setProgram(signal, "delay")
 
@@ -218,6 +264,7 @@ class TestTraffic:
             data.append(self.log_values())
         return data
 
+    @timed
     def marl(self):
         print("Testing RL...")
         data = []
@@ -233,7 +280,6 @@ class TestTraffic:
             state, info = self.env.reset()
             state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
             done = False
-            #warmup
             for warmup in range(self.env.config["WARMUP_STEPS"]):
                 traci.simulationStep()
             while not done:
@@ -245,6 +291,7 @@ class TestTraffic:
                     states.append(state)
                     action = self.action_selection.epsilon_greedy_selection(agent, state)
                     actions.append(action)
+                    #print(actions)
                 observation, reward, terminated, truncated, episode_data = self.env.step(actions)
                 data.append(episode_data)
                 if terminated or truncated:
@@ -254,36 +301,38 @@ class TestTraffic:
             data = np.reshape(data,(data_shape,7))
             return data
 
+    @timed
     def llm(self):
         print("Testing LLM...")
-        #PATH = self.config["PATH_TEST"]
-        #agent = torch.load(PATH, weights_only=False)
-        #agent.eval()
         self.config["EPSILON"] = 0
         data = []
         for episode in range(self.config["EPISODES"]):
             state, info = self.env.reset()
             state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
             done = False
-            #warmup
             for warmup in range(self.env.config["WARMUP_STEPS"]):
                 traci.simulationStep()
             llm_prev_actions = []
             while not done:
                 states = []
-                actions = []
                 for signal in self.env.network.instance.traffic_light:
+                    start_loop = time.perf_counter()
+
                     state = self.env.get_state(signal)
                     state = torch.tensor(state, dtype=torch.float32, device=self.config["DEVICE"]).unsqueeze(0)
                     states.append(state)
                     action_space = self.env.action_space.n
-                    action_space = list(range(action_space))
                     action = self.prompt_llm(state.tolist(), action_space, llm_prev_actions)
-                    actions.append(action)
                     llm_prev_actions.append(action)
-                    print(actions)
 
-                observation, reward, terminated, truncated, episode_data = self.env.step(actions)
+                    end_loop = time.perf_counter()
+                    #print(f"[TIME] Per-intersection loop executed in {end_loop - start_loop:.3f} seconds")
+                    #print(action)
+
+                step_start = time.perf_counter()
+                observation, reward, terminated, truncated, episode_data = self.env.step(action)
+                step_end = time.perf_counter()
+                #print(f"[TIME] env.step execution: {step_end - step_start:.3f} seconds")
 
                 data.append(episode_data)
                 if terminated or truncated:
@@ -292,6 +341,8 @@ class TestTraffic:
             data_shape = int((np.shape(np.array(data).flatten())[0]) / 7)
             data = np.reshape(data, (data_shape, 7))
             return data
+
+    # ... a többi függvény változatlan marad (print_results, plot, prompt_llm, stb.)
 
     def plot(self, static, actuated, delayed, marl, llm):
         "This describes which data is relevant in a certain test"
@@ -328,9 +379,10 @@ class TestTraffic:
         plt.grid(True, linewidth=1, linestyle='-', color='#ead1dc')
         plt.show()
 
-    def filter_data(self,*args):
+    def filter_data(self, *args):
         filtered_data = None
         return filtered_data
+
     def log_values(self):
         waiting_time = []
         speed = []
@@ -356,6 +408,7 @@ class TestTraffic:
         arrived_vehicles = traci.simulation.getArrivedNumber()
 
         return [avg_waiting_time, avg_speed, avg_co2, avg_nox, avg_halting_vehicles, avg_travel_time, arrived_vehicles]
+
 
 if __name__ == '__main__':
     test = TestTraffic()
